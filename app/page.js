@@ -3,55 +3,24 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
+// Static gold price data - no API call needed
+const DEFAULT_PRICES = {
+  chowtaifook: { 
+    gold999: { sell: 57890, sellGram: 1546.66, buy: 46310, buyGram: 1237.28 }, 
+    goldPellet: { sell: 52120, sellGram: 1392.5, buy: 47520, buyGram: 1269.6 },
+    goldRedemption: { buy: 47810, buyGram: 1277.35 }
+  },
+  chowsangsang: { 
+    goldOrnaments: { sell: 57890, sellGram: 1547, exchange: 48050, exchangeGram: 1283, buy: 46310, buyGram: 1237 }, 
+    goldIngot: { sell: 55370, sellGram: 1480, buy: 46310, buyGram: 1237 }, 
+    goldBars: { sell: 52110, sellGram: 1393, buy: 47520, buyGram: 1269 }
+  }
+};
+
 export default function Home() {
-  const [prices, setPrices] = useState({
-    chowtaifook: { 
-      gold999: { sell: 57890, sellGram: 1546.66, buy: 46310, buyGram: 1237.28 }, 
-      goldPellet: { sell: 52120, sellGram: 1392.5, buy: 47520, buyGram: 1269.6 }
-    },
-    chowsangsang: { 
-      goldOrnaments: { sell: 57890, sellGram: 1547, exchange: 48050, exchangeGram: 1283, buy: 46310, buyGram: 1237 }, 
-      goldIngot: { sell: 55370, sellGram: 1480, buy: 46310, buyGram: 1237 }, 
-      goldBars: { sell: 52110, sellGram: 1393, buy: 47520, buyGram: 1269 }
-    }
-  });
-  const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+  const [prices, setPrices] = useState(DEFAULT_PRICES);
   const [selectedSource, setSelectedSource] = useState('chowtaifook');
-  const [lastUpdate, setLastUpdate] = useState(null);
-
-  const fetchPrices = async (force = false) => {
-    try {
-      const response = await fetch(`/api/prices?force=${force}&t=${Date.now()}`);
-      const result = await response.json();
-      
-      if (result.success && result.data) {
-        const newPrices = {
-          chowtaifook: result.data.chowtaifook || {},
-          chowsangsang: result.data.chowsangsang || {}
-        };
-        setPrices(newPrices);
-        setLastUpdate(result.lastUpdate);
-      }
-      setLoading(false);
-      setRefreshing(false);
-    } catch (error) {
-      console.error('Error fetching prices:', error);
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchPrices();
-    const interval = setInterval(() => fetchPrices(true), 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const handleRefresh = () => {
-    setRefreshing(true);
-    fetchPrices(true);
-  };
+  const [lastUpdate] = useState(new Date().toISOString());
 
   return (
     <main>
@@ -131,12 +100,6 @@ export default function Home() {
             </div>
             
             <div className="feature-card">
-              <div className="feature-icon">🔔</div>
-              <h3 className="feature-title">價格提醒</h3>
-              <p className="feature-desc">自訂價格通知，市場波動即時知曉</p>
-            </div>
-            
-            <div className="feature-card">
               <div className="feature-icon">🔐</div>
               <h3 className="feature-title">數據安全</h3>
               <p className="feature-desc">雲端儲存，您的數據永不丟失</p>
@@ -150,13 +113,6 @@ export default function Home() {
         <div className="container">
           <div className="price-header">
             <h2 className="section-title" style={{ textAlign: 'left', marginBottom: 0 }}>今日金價</h2>
-            <button 
-              onClick={handleRefresh} 
-              className="btn btn-secondary btn-sm"
-              disabled={refreshing}
-            >
-              {refreshing ? '🔄 載入中' : '🔄 刷新'}
-            </button>
           </div>
           
           <div className="price-source-tabs">
@@ -174,94 +130,84 @@ export default function Home() {
             </button>
           </div>
           
-          {loading && (
-            <div className="loading">
-              <div className="spinner"></div>
-            </div>
-          )}
-          
-          {!loading && (
-            <div className="price-grid">
-              {selectedSource === 'chowtaifook' ? (
-                <>
-                  <div className="price-card">
-                    <h3 className="price-card-title">💰 999.9 黃金</h3>
-                    <div className="price-row">
-                      <span className="price-label">售價（毎両）</span>
-                      <span className="price-value sell">HK$ {prices.chowtaifook?.gold999?.sell?.toLocaleString() || '--'}</span>
-                    </div>
-                    <div className="price-row">
-                      <span className="price-label">回收價（毎両）</span>
-                      <span className="price-value buy">HK$ {prices.chowtaifook?.gold999?.buy?.toLocaleString() || '--'}</span>
-                    </div>
-                    <div className="price-row">
-                      <span className="price-label">售價（毎克）</span>
-                      <span className="price-value sell">HK$ {prices.chowtaifook?.gold999?.sellGram?.toFixed(2) || '--'}</span>
-                    </div>
+          <div className="price-grid">
+            {selectedSource === 'chowtaifook' ? (
+              <>
+                <div className="price-card">
+                  <h3 className="price-card-title">💰 999.9 黃金</h3>
+                  <div className="price-row">
+                    <span className="price-label">售價（毎両）</span>
+                    <span className="price-value sell">HK$ {prices.chowtaifook.gold999.sell.toLocaleString()}</span>
                   </div>
-                  
-                  <div className="price-card">
-                    <h3 className="price-card-title">🪙 黃金粒</h3>
-                    <div className="price-row">
-                      <span className="price-label">售價（毎両）</span>
-                      <span className="price-value sell">HK$ {prices.chowtaifook?.goldPellet?.sell?.toLocaleString() || '--'}</span>
-                    </div>
-                    <div className="price-row">
-                      <span className="price-label">回收價（毎両）</span>
-                      <span className="price-value buy">HK$ {prices.chowtaifook?.goldPellet?.buy?.toLocaleString() || '--'}</span>
-                    </div>
+                  <div className="price-row">
+                    <span className="price-label">回收價（毎両）</span>
+                    <span className="price-value buy">HK$ {prices.chowtaifook.gold999.buy.toLocaleString()}</span>
                   </div>
-                </>
-              ) : (
-                <>
-                  <div className="price-card">
-                    <h3 className="price-card-title">💍 黃金飾品</h3>
-                    <div className="price-row">
-                      <span className="price-label">售價（毎両）</span>
-                      <span className="price-value sell">HK$ {prices.chowsangsang?.goldOrnaments?.sell?.toLocaleString() || '--'}</span>
-                    </div>
-                    <div className="price-row">
-                      <span className="price-label">兌換價（毎両）</span>
-                      <span className="price-value exchange">HK$ {prices.chowsangsang?.goldOrnaments?.exchange?.toLocaleString() || '--'}</span>
-                    </div>
-                    <div className="price-row">
-                      <span className="price-label">回收價（毎両）</span>
-                      <span className="price-value buy">HK$ {prices.chowsangsang?.goldOrnaments?.buy?.toLocaleString() || '--'}</span>
-                    </div>
+                  <div className="price-row">
+                    <span className="price-label">售價（毎克）</span>
+                    <span className="price-value sell">HK$ {prices.chowtaifook.gold999.sellGram.toFixed(2)}</span>
                   </div>
-                  
-                  <div className="price-card">
-                    <h3 className="price-card-title">📐 金條</h3>
-                    <div className="price-row">
-                      <span className="price-label">售價（毎両）</span>
-                      <span className="price-value sell">HK$ {prices.chowsangsang?.goldIngot?.sell?.toLocaleString() || '--'}</span>
-                    </div>
-                    <div className="price-row">
-                      <span className="price-label">回收價（毎両）</span>
-                      <span className="price-value buy">HK$ {prices.chowsangsang?.goldIngot?.buy?.toLocaleString() || '--'}</span>
-                    </div>
+                </div>
+                
+                <div className="price-card">
+                  <h3 className="price-card-title">🪙 黃金粒</h3>
+                  <div className="price-row">
+                    <span className="price-label">售價（毎両）</span>
+                    <span className="price-value sell">HK$ {prices.chowtaifook.goldPellet.sell.toLocaleString()}</span>
                   </div>
-                  
-                  <div className="price-card">
-                    <h3 className="price-card-title">🪙 金粒</h3>
-                    <div className="price-row">
-                      <span className="price-label">售價（毎両）</span>
-                      <span className="price-value sell">HK$ {prices.chowsangsang?.goldBars?.sell?.toLocaleString() || '--'}</span>
-                    </div>
-                    <div className="price-row">
-                      <span className="price-label">回收價（毎両）</span>
-                      <span className="price-value buy">HK$ {prices.chowsangsang?.goldBars?.buy?.toLocaleString() || '--'}</span>
-                    </div>
+                  <div className="price-row">
+                    <span className="price-label">回收價（毎両）</span>
+                    <span className="price-value buy">HK$ {prices.chowtaifook.goldPellet.buy.toLocaleString()}</span>
                   </div>
-                </>
-              )}
-            </div>
-          )}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="price-card">
+                  <h3 className="price-card-title">💍 黃金飾品</h3>
+                  <div className="price-row">
+                    <span className="price-label">售價（毎両）</span>
+                    <span className="price-value sell">HK$ {prices.chowsangsang.goldOrnaments.sell.toLocaleString()}</span>
+                  </div>
+                  <div className="price-row">
+                    <span className="price-label">兌換價（毎両）</span>
+                    <span className="price-value exchange">HK$ {prices.chowsangsang.goldOrnaments.exchange.toLocaleString()}</span>
+                  </div>
+                  <div className="price-row">
+                    <span className="price-label">回收價（毎両）</span>
+                    <span className="price-value buy">HK$ {prices.chowsangsang.goldOrnaments.buy.toLocaleString()}</span>
+                  </div>
+                </div>
+                
+                <div className="price-card">
+                  <h3 className="price-card-title">📐 金條</h3>
+                  <div className="price-row">
+                    <span className="price-label">售價（毎両）</span>
+                    <span className="price-value sell">HK$ {prices.chowsangsang.goldIngot.sell.toLocaleString()}</span>
+                  </div>
+                  <div className="price-row">
+                    <span className="price-label">回收價（毎両）</span>
+                    <span className="price-value buy">HK$ {prices.chowsangsang.goldIngot.buy.toLocaleString()}</span>
+                  </div>
+                </div>
+                
+                <div className="price-card">
+                  <h3 className="price-card-title">🪙 金粒</h3>
+                  <div className="price-row">
+                    <span className="price-label">售價（毎両）</span>
+                    <span className="price-value sell">HK$ {prices.chowsangsang.goldBars.sell.toLocaleString()}</span>
+                  </div>
+                  <div className="price-row">
+                    <span className="price-label">回收價（毎両）</span>
+                    <span className="price-value buy">HK$ {prices.chowsangsang.goldBars.buy.toLocaleString()}</span>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
           
           <div className="last-update">
-            {lastUpdate ? `最後更新：${new Date(lastUpdate).toLocaleString('zh-HK')}` : '使用默認價格'}
-            <br />
-            <span style={{ color: 'var(--primary)', fontSize: '11px' }}>每 5 分鐘自動更新</span>
+            數據更新日期：2024年3月5日
           </div>
         </div>
       </section>

@@ -191,24 +191,9 @@ export default function Dashboard() {
   };
 
   const fetchPrices = async (force = false) => {
-    try {
-      const response = await fetch(`/api/prices?force=${force}&t=${Date.now()}`);
-      const result = await response.json();
-      
-      if (result.success && result.data) {
-        // Ensure data structure is correct
-        const newPrices = {
-          chowtaifook: result.data.chowtaifook || {},
-          chowsangsang: result.data.chowsangsang || {}
-        };
-        setPrices(newPrices);
-        setLastUpdate(result.lastUpdate);
-      }
-      setRefreshing(false);
-    } catch (error) {
-      console.error('Error fetching prices:', error);
-      setRefreshing(false);
-    }
+    // No API call needed - we use static data
+    // This function kept for potential future API integration
+    setRefreshing(false);
   };
 
   useEffect(() => {
