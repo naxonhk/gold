@@ -1,0 +1,27 @@
+{
+  "name": "貴金屬管家",
+  "short_name": "貴金屬管家",
+  "description": "首創將金額自動換算為黃金克重，讓您輕鬆管理貴金屬資產",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a1a",
+  "theme_color": "#ffd700",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["finance", "utilities"],
+  "lang": "zh-HK",
+  "dir": "ltr"
+}
