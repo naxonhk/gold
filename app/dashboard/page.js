@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
-// Firebase will be initialized on client side only
+// Firebase will be initialized from CDN (loaded in layout.js)
 let auth = null;
 let db = null;
 
@@ -40,82 +40,108 @@ export default function Dashboard() {
   const [calcType, setCalcType] = useState('sell');
   const [calcResult, setCalcResult] = useState(null);
 
-  // Initialize Firebase on client side
+  // Initialize Firebase from CDN
   useEffect(() => {
-    async function initFirebase() {
-      try {
-        const { initializeApp } = await import('firebase/app');
-        const { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } = await import('firebase/auth');
-        const { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, query, orderBy } = await import('firebase/firestore');
-        
-        const firebaseConfig = {
-          apiKey: "AIzaSyDTAQgCvZO7Q9Y9A2rSWf0HL1uyA0iJwj4",
-          authDomain: "gold-6b24b.firebaseapp.com",
-          projectId: "gold-6b24b",
-          storageBucket: "gold-6b24b.firebasestorage.app",
-          messagingSenderId: "1095159481868",
-          appId: "1:1095159481868:web:af30df2ff4cc0427e05029"
-        };
-        
-        const app = initializeApp(firebaseConfig);
-        auth = getAuth(app);
-        db = getFirestore(app);
-        
-        // Set up auth listener
-        onAuthStateChanged(auth, (user) => {
-          setUser(user);
+    function initFirebase() {
+      // Wait for firebase to be available from CDN
+      const checkFirebase = setInterval(() => {
+        if (window.firebase && !auth) {
+          clearInterval(checkFirebase);
+          
+          const firebaseConfig = {
+            apiKey: "AIzaSyDTAQgCvZO7Q9Y9A2rSWf0HL1uyA0iJwj4",
+            authDomain: "gold-6b24b.firebaseapp.com",
+            projectId: "gold-6b24b",
+            storageBucket: "gold-6b24b.firebasestorage.app",
+            messagingSenderId: "1095159481868",
+            appId: "1:1095159481868:web:af30df2ff4cc0427e05029"
+          };
+          
+          const app = window.firebase.initializeApp(firebaseConfig);
+          auth = window.firebase.auth(app);
+          db = window.firebase.firestore(app);
+          
+          // Set up auth listener
+          window.firebase.auth(auth).onAuthStateChanged((user) => {
+            setUser(user);
+            setLoading(false);
+            setFirebaseReady(true);
+            if (user) {
+              loadRecords(user.uid);
+            } else {
+              setRecords([]);
+            }
+          });
+        }
+      }, 100);
+      
+      // Timeout after 10 seconds
+      setTimeout(() => {
+        clearInterval(checkFirebase);
+        if (!auth) {
+          console.log('Firebase init timeout');
           setLoading(false);
-          setFirebaseReady(true);
-          if (user) {
-            loadRecords(user.uid);
-          } else {
-            setRecords([]);
-          }
-        });
-        
-        // Make functions available globally
-        window.firebaseAuth = { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut };
-        window.firebaseDb = { collection, addDoc, onSnapshot, deleteDoc, doc, query, orderBy };
-      } catch (error) {
-        console.error('Firebase init error:', error);
-        setLoading(false);
-      }
+        }
+      }, 10000);
     }
     
     initFirebase();
   }, []);
 
   const loadRecords = (uid) => {
-    if (!window.firebaseDb || !db) return;
-    const { collection, onSnapshot, query, orderBy } = window.firebaseDb;
-    const q = query(
-      collection(db, 'users', uid, 'records'),
-      orderBy('createdAt', 'desc')
-    );
+    if (!db || !window.firebase) return;
     
-    onSnapshot(q, (snapshot) => {
+    const q = window.firebase.firestore(db).collection('users').doc(uid).collection('records')
+      .orderBy('createdAt', 'desc');
+    
+    window.firebase.firestore(db).recursiveGet(q).then((snapshot) => {
       const recordsData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
         createdAt: doc.data().createdAt?.toDate?.() || new Date()
       }));
       setRecords(recordsData);
+    }).catch((error) => {
+      // Try onSnapshot instead
+      window.firebase.firestore(db).recursiveGet(q).catch(() => {});
     });
   };
 
-  const handleAuth = async (e) =>Default();
+  // Alternative load with onSnapshot
+  useEffect(() => {
+    if (!user || !db || !window.firebase) return;
+    
+    const unsubscribe = window.firebase.firestore(db).collection('users')
+      .doc(user.uid).collection('records')
+      .orderBy('createdAt', 'desc')
+      .onSnapshot((snapshot) => {
+        const recordsData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt?.toDate?.() || new Date()
+        }));
+        setRecords(recordsData);
+      }, (error) => {
+        console.error('Records load error:', error);
+      });
+    
+    return () => unsubscribe();
+  }, [user, db]);
+
+  const handleAuth = async (e) => {
+    e.preventDefault();
     setAuthError('');
     
- {
-    e.prevent    if (!window.firebaseAuth) return;
-    
-    const { signInWithEmailAndPassword, createUserWithEmailAndPassword } = window.firebaseAuth;
+    if (!auth || !window.firebase) {
+      setAuthError('系統載入中，請稍候再試');
+      return;
+    }
     
     try {
       if (isLogin) {
-        await signInWithEmailAndPassword(auth, email, password);
+        await window.firebase.auth(auth).signInWithEmailAndPassword(email, password);
       } else {
-        await createUserWithEmailAndPassword(auth, email, password);
+        await window.firebase.auth(auth).createUserWithEmailAndPassword(email, password);
       }
       setShowAuthModal(false);
       setEmail('');
@@ -126,25 +152,22 @@ export default function Dashboard() {
   };
 
   const handleLogout = async () => {
-    if (!window.firebaseAuth) return;
-    const { signOut } = window.firebaseAuth;
-    await signOut(auth);
+    if (!auth || !window.firebase) return;
+    await window.firebase.auth(auth).signOut();
   };
 
   const handleAddRecord = async (e) => {
     e.preventDefault();
-    if (!user || !newRecord.weight || !newRecord.price || !window.firebaseDb) return;
+    if (!user || !newRecord.weight || !newRecord.price || !db || !window.firebase) return;
     
-    const { collection, addDoc } = window.firebaseDb;
-    
-    await addDoc(collection(db, 'users', user.uid, 'records'), {
+    await window.firebase.firestore(db).collection('users').doc(user.uid).collection('records').add({
       type: newRecord.type,
       weight: parseFloat(newRecord.weight),
       price: parseFloat(newRecord.price),
       note: newRecord.note,
       total: parseFloat(newRecord.weight) * parseFloat(newRecord.price),
       source: selectedSource,
-      createdAt: new Date()
+      createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
     });
     
     setNewRecord({ type: 'buy', weight: '', price: '', note: '' });
@@ -152,9 +175,8 @@ export default function Dashboard() {
   };
 
   const handleDeleteRecord = async (id) => {
-    if (!user || !window.firebaseDb || !confirm('確定要刪除這筆記錄嗎？')) return;
-    const { deleteDoc, doc } = window.firebaseDb;
-    await deleteDoc(doc(db, 'users', user.uid, 'records', id));
+    if (!user || !db || !window.firebase || !confirm('確定要刪除這筆記錄嗎？')) return;
+    await window.firebase.firestore(db).collection('users').doc(user.uid).collection('records').doc(id).delete();
   };
 
   const fetchPrices = async (force = false) => {
@@ -199,7 +221,7 @@ export default function Dashboard() {
   const totalSell = sellRecords.reduce((sum, r) => sum + (r.total || 0), 0);
   const profit = totalSell - totalBuy;
 
-  if (loading || !firebaseReady) {
+  if (loading) {
     return (
       <div className="loading" style={{ minHeight: '100vh' }}>
         <div className="spinner"></div>
