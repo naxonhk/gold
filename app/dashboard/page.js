@@ -13,8 +13,16 @@ export default function Dashboard() {
   const [authError, setAuthError] = useState('');
   
   const [prices, setPrices] = useState({
-    chowtaifook: { gold999: { sell: null, buy: null }, goldPellet: { sell: null, buy: null } },
-    chowsangsang: { goldOrnaments: { sell: null, buy: null }, goldIngot: { sell: null, buy: null }, goldBars: { sell: null, buy: null } }
+    chowtaifook: { 
+      gold999: { sell: 57890, sellGram: 1546.66, buy: 46310, buyGram: 1237.28 }, 
+      goldPellet: { sell: 52120, sellGram: 1392.5, buy: 47520, buyGram: 1269.6 },
+      goldRedemption: { buy: 47810, buyGram: 1277.35 }
+    },
+    chowsangsang: { 
+      goldOrnaments: { sell: 57890, sellGram: 1547, exchange: 48050, exchangeGram: 1283, buy: 46310, buyGram: 1237 }, 
+      goldIngot: { sell: 55370, sellGram: 1480, buy: 46310, buyGram: 1237 }, 
+      goldBars: { sell: 52110, sellGram: 1393, buy: 47520, buyGram: 1269 }
+    }
   });
   const [selectedSource, setSelectedSource] = useState('chowtaifook');
   const [refreshing, setRefreshing] = useState(false);
@@ -184,10 +192,16 @@ export default function Dashboard() {
 
   const fetchPrices = async (force = false) => {
     try {
-      const response = await fetch(`/api/prices?force=${force}`);
+      const response = await fetch(`/api/prices?force=${force}&t=${Date.now()}`);
       const result = await response.json();
+      
       if (result.success && result.data) {
-        setPrices(result.data);
+        // Ensure data structure is correct
+        const newPrices = {
+          chowtaifook: result.data.chowtaifook || {},
+          chowsangsang: result.data.chowsangsang || {}
+        };
+        setPrices(newPrices);
         setLastUpdate(result.lastUpdate);
       }
       setRefreshing(false);
