@@ -25,8 +25,8 @@ export default function Dashboard() {
     }
   });
   const [selectedSource, setSelectedSource] = useState('chowtaifook');
-  const [refreshing, setRefreshing] = useState(false);
-  const [lastUpdate, setLastUpdate] = useState(null);
+  const [preferredUnit, setPreferredUnit] = useState('tael'); // 'tael' or 'gram'
+  const [showSettings, setShowSettings] = useState(false);
   
   const [records, setRecords] = useState([]);
   const [filter, setFilter] = useState('all');
@@ -167,6 +167,27 @@ export default function Dashboard() {
     await authRef.current.signOut();
   };
 
+  const getPrice = (priceObj, type) => {
+    if (!priceObj) return { value: '--', unit: '' };
+    if (preferredUnit === 'gram') {
+      return { 
+        value: priceObj[`${type}Gram`]?.toFixed(2) || '--', 
+        unit: '克' 
+      };
+    }
+    return { 
+      value: priceObj[type]?.toLocaleString() || '--', 
+      unit: '両' 
+    };
+  };
+
+  const getUnitLabel = () => preferredUnit === 'gram' ? '克' : '両';
+
+  const handleSavePreferences = (unit) => {
+    setPreferredUnit(unit);
+    setShowSettings(false);
+  };
+
   const handleAddRecord = async (e) => {
     e.preventDefault();
     if (!user || !newRecord.weight || !newRecord.price || !dbRef.current) return;
@@ -272,6 +293,7 @@ export default function Dashboard() {
               {user ? (
                 <>
                   <span className="user-email">{user.email}</span>
+                  <button onClick={() => setShowSettings(true)} className="btn btn-secondary btn-sm">⚙️ 設置</button>
                   <button onClick={handleLogout} className="btn btn-secondary btn-sm">登出</button>
                 </>
               ) : (
@@ -372,6 +394,35 @@ export default function Dashboard() {
                 {isLogin ? '立即註冊' : '立即登入'}
               </button>
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Settings Modal */}
+      {showSettings && (
+        <div className="modal-overlay" onClick={() => setShowSettings(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setShowSettings(false)}>×</button>
+            <h2 className="modal-title">⚙️ 設置</h2>
+            
+            <div className="form-group">
+              <label className="form-label">顯示單位</label>
+              <select 
+                className="form-select"
+                value={preferredUnit}
+                onChange={e => handleSavePreferences(e.target.value)}
+              >
+                <option value="tael">両 (Tael)</option>
+                <option value="gram">克 (Gram)</option>
+              </select>
+              <p style={{ color: 'var(--text-muted)', fontSize: '12px', marginTop: '8px' }}>
+                選擇後，所有價格和計算將使用您選擇的單位顯示
+              </p>
+            </div>
+            
+            <button onClick={() => setShowSettings(false)} className="btn btn-primary" style={{ width: '100%', marginTop: '16px' }}>
+              完成
+            </button>
           </div>
         </div>
       )}
