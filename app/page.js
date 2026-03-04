@@ -5,8 +5,8 @@ import Link from 'next/link';
 
 export default function Home() {
   const [prices, setPrices] = useState({
-    chowtaifook: { sell: null, buy: null, sellGram: null, pelletSell: null, pelletBuy: null, lastUpdate: null },
-    chowsangsang: { sell: null, exchange: null, buy: null, ingotSell: null, ingotBuy: null, lastUpdate: null }
+    chowtaifook: { gold999: { sell: null, buy: null }, goldPellet: { sell: null, buy: null } },
+    chowsangsang: { goldOrnaments: { sell: null, buy: null }, goldIngot: { sell: null, buy: null }, goldBars: { sell: null, buy: null } }
   });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);

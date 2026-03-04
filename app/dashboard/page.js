@@ -634,8 +634,8 @@ export default function Dashboard() {
               {calcResult && (
                 <div className="calc-result">
                   <div className="calc-result-label">使用 {calcType === 'sell' ? '售價' : '回收價'}：HK$ {calcResult.price?.toLocaleString()}/両</div>
-                  <div className="calc-result-value">HK$ {calcResult.total.toLocaleString()}</div>
-                  <div className="calc-result-gram">≈ {calcResult.gramWeight.toFixed(2)} 克</div>
+                  <div className="calc-result-value">HK$ {calcResult.total?.toLocaleString()}</div>
+                  <div className="calc-result-gram">≈ {calcResult.gramWeight?.toFixed(2)} 克</div>
                 </div>
               )}
             </div>
