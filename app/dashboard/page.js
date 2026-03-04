@@ -13,8 +13,8 @@ export default function Dashboard() {
   const [authError, setAuthError] = useState('');
   
   const [prices, setPrices] = useState({
-    chowtaifook: { sell: null, buy: null },
-    chowsangsang: { sell: null, buy: null }
+    chowtaifook: { gold999: { sell: null, buy: null }, goldPellet: { sell: null, buy: null } },
+    chowsangsang: { goldOrnaments: { sell: null, buy: null }, goldIngot: { sell: null, buy: null }, goldBars: { sell: null, buy: null } }
   });
   const [selectedSource, setSelectedSource] = useState('chowtaifook');
   const [refreshing, setRefreshing] = useState(false);
@@ -33,6 +33,8 @@ export default function Dashboard() {
   
   const [calcWeight, setCalcWeight] = useState('');
   const [calcType, setCalcType] = useState('sell');
+  const [calcWeightUnit, setCalcWeightUnit] = useState('tael');
+  const [calcGoldType, setCalcGoldType] = useState('gold999');
   const [calcResult, setCalcResult] = useState(null);
 
   // Use refs for Firebase instances
@@ -203,11 +205,32 @@ export default function Dashboard() {
 
   const handleCalculate = () => {
     if (!calcWeight) return;
-    const price = prices[selectedSource][calcType];
-    if (!price) return;
-    const total = parseFloat(calcWeight) * price;
-    const gramWeight = parseFloat(calcWeight) * 37.429;
-    setCalcResult({ total, gramWeight, price });
+    
+    // Get the price based on gold type and source
+    const sourcePrices = prices[selectedSource];
+    const goldTypePrices = sourcePrices[calcGoldType];
+    
+    if (!goldTypePrices) return;
+    
+    const pricePerTael = goldTypePrices[calcType];
+    if (!pricePerTael) return;
+    
+    // Convert to tael if input is in grams
+    const weightInTael = calcWeightUnit === 'gram' 
+      ? parseFloat(calcWeight) / 37.429 
+      : parseFloat(calcWeight);
+    
+    const total = weightInTael * pricePerTael;
+    const weightInGram = weightInTael * 37.429;
+    
+    setCalcResult({ 
+      total, 
+      weightInGram, 
+      weightInTael,
+      pricePerTael,
+      pricePerGram: pricePerTael / 37.429,
+      goldTypeName: calcGoldType
+    });
   };
 
   const filteredRecords = filter === 'all' 
@@ -426,7 +449,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Current Price */}
+            {/* Current Price - All Gold Types */}
             <div className="card" style={{ marginBottom: '24px' }}>
               <div className="card-header">
                 <h3 className="card-title">💰 當前金價</h3>
@@ -434,20 +457,112 @@ export default function Dashboard() {
                   {lastUpdate ? new Date(lastUpdate).toLocaleTimeString('zh-HK') : ''}
                 </span>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div style={{ padding: '12px', background: 'rgba(0,214,143,0.1)', borderRadius: '10px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>售價</div>
-                  <div style={{ fontSize: '20px', fontWeight: '800', color: 'var(--success)' }}>
-                    HK$ {prices[selectedSource]?.sell?.toLocaleString() || '--'}
+              
+              {selectedSource === 'chowtaifook' ? (
+                <div style={{ display: 'grid', gap: '16px' }}>
+                  {/* 999.9 Gold */}
+                  <div style={{ padding: '16px', background: 'rgba(255,215,0,0.08)', borderRadius: '12px' }}>
+                    <div style={{ fontWeight: '700', marginBottom: '12px', color: 'var(--primary)' }}>💎 999.9 黃金</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>售價</div>
+                        <div style={{ fontSize: '18px', fontWeight: '800', color: 'var(--success)' }}>HK$ {prices.chowtaifook?.gold999?.sell?.toLocaleString()}</div>
+                        <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>HK$ {prices.chowtaifook?.gold999?.sellGram}/克</div>
+                      </div>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>回收價</div>
+                        <div style={{ fontSize: '18px', fontWeight: '800', color: 'var(--danger)' }}>HK$ {prices.chowtaifook?.gold999?.buy?.toLocaleString()}</div>
+                        <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>HK$ {prices.chowtaifook?.gold999?.buyGram}/克</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Gold Pellet */}
+                  <div style={{ padding: '16px', background: 'rgba(255,215,0,0.05)', borderRadius: '12px' }}>
+                    <div style={{ fontWeight: '700', marginBottom: '12px', color: 'var(--primary)' }}>🪙 黃金粒 (投資黃金)</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>售價</div>
+                        <div style={{ fontSize: '18px', fontWeight: '800', color: 'var(--success)' }}>HK$ {prices.chowtaifook?.goldPellet?.sell?.toLocaleString()}</div>
+                        <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>HK$ {prices.chowtaifook?.goldPellet?.sellGram}/克</div>
+                      </div>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>回收價</div>
+                        <div style={{ fontSize: '18px', fontWeight: '800', color: 'var(--danger)' }}>HK$ {prices.chowtaifook?.goldPellet?.buy?.toLocaleString()}</div>
+                        <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>HK$ {prices.chowtaifook?.goldPellet?.buyGram}/克</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Gold Redemption */}
+                  <div style={{ padding: '16px', background: 'rgba(255,215,0,0.05)', borderRadius: '12px' }}>
+                    <div style={{ fontWeight: '700', marginBottom: '12px', color: 'var(--primary)' }}>🔄 黃金贖回價 / 珠寶換購價</div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>回收價</div>
+                      <div style={{ fontSize: '18px', fontWeight: '800', color: 'var(--danger)' }}>HK$ {prices.chowtaifook?.goldRedemption?.buy?.toLocaleString()}</div>
+                      <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>HK$ {prices.chowtaifook?.goldRedemption?.buyGram}/克</div>
+                    </div>
                   </div>
                 </div>
-                <div style={{ padding: '12px', background: 'rgba(255,92,92,0.1)', borderRadius: '10px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>回收價</div>
-                  <div style={{ fontSize: '20px', fontWeight: '800', color: 'var(--danger)' }}>
-                    HK$ {prices[selectedSource]?.buy?.toLocaleString() || '--'}
+              ) : (
+                <div style={{ display: 'grid', gap: '16px' }}>
+                  {/* Gold Ornaments */}
+                  <div style={{ padding: '16px', background: 'rgba(255,215,0,0.08)', borderRadius: '12px' }}>
+                    <div style={{ fontWeight: '700', marginBottom: '12px', color: 'var(--primary)' }}>💍 黃金飾品</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>售價</div>
+                        <div style={{ fontSize: '16px', fontWeight: '800', color: 'var(--success)' }}>HK$ {prices.chowsangsang?.goldOrnaments?.sell?.toLocaleString()}</div>
+                        <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>HK$ {prices.chowsangsang?.goldOrnaments?.sellGram}/克</div>
+                      </div>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>兌換價</div>
+                        <div style={{ fontSize: '16px', fontWeight: '800', color: '#60a5fa' }}>HK$ {prices.chowsangsang?.goldOrnaments?.exchange?.toLocaleString()}</div>
+                        <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>HK$ {prices.chowsangsang?.goldOrnaments?.exchangeGram}/克</div>
+                      </div>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>回收價</div>
+                        <div style={{ fontSize: '16px', fontWeight: '800', color: 'var(--danger)' }}>HK$ {prices.chowsangsang?.goldOrnaments?.buy?.toLocaleString()}</div>
+                        <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>HK$ {prices.chowsangsang?.goldOrnaments?.buyGram}/克</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Gold Ingot */}
+                  <div style={{ padding: '16px', background: 'rgba(255,215,0,0.05)', borderRadius: '12px' }}>
+                    <div style={{ fontWeight: '700', marginBottom: '12px', color: 'var(--primary)' }}>📐 金條</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>售價</div>
+                        <div style={{ fontSize: '18px', fontWeight: '800', color: 'var(--success)' }}>HK$ {prices.chowsangsang?.goldIngot?.sell?.toLocaleString()}</div>
+                        <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>HK$ {prices.chowsangsang?.goldIngot?.sellGram}/克</div>
+                      </div>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>回收價</div>
+                        <div style={{ fontSize: '18px', fontWeight: '800', color: 'var(--danger)' }}>HK$ {prices.chowsangsang?.goldIngot?.buy?.toLocaleString()}</div>
+                        <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>HK$ {prices.chowsangsang?.goldIngot?.buyGram}/克</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Gold Bars */}
+                  <div style={{ padding: '16px', background: 'rgba(255,215,0,0.05)', borderRadius: '12px' }}>
+                    <div style={{ fontWeight: '700', marginBottom: '12px', color: 'var(--primary)' }}>🪙 金粒</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>售價</div>
+                        <div style={{ fontSize: '18px', fontWeight: '800', color: 'var(--success)' }}>HK$ {prices.chowsangsang?.goldBars?.sell?.toLocaleString()}</div>
+                        <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>HK$ {prices.chowsangsang?.goldBars?.sellGram}/克</div>
+                      </div>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>回收價</div>
+                        <div style={{ fontSize: '18px', fontWeight: '800', color: 'var(--danger)' }}>HK$ {prices.chowsangsang?.goldBars?.buy?.toLocaleString()}</div>
+                        <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>HK$ {prices.chowsangsang?.goldBars?.buyGram}/克</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Calculator */}
@@ -455,7 +570,29 @@ export default function Dashboard() {
               <h3 className="card-title">🧮 黃金計算機</h3>
               <div className="calc-form">
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label">重量（両）</label>
+                  <label className="form-label">黃金類型</label>
+                  <select 
+                    className="form-select"
+                    value={calcGoldType}
+                    onChange={e => setCalcGoldType(e.target.value)}
+                  >
+                    {selectedSource === 'chowtaifook' ? (
+                      <>
+                        <option value="gold999">999.9 黃金</option>
+                        <option value="goldPellet">黃金粒</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value="goldOrnaments">黃金飾品</option>
+                        <option value="goldIngot">金條</option>
+                        <option value="goldBars">金粒</option>
+                      </>
+                    )}
+                  </select>
+                </div>
+                
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">重量</label>
                   <input
                     type="number"
                     className="form-input"
@@ -466,14 +603,26 @@ export default function Dashboard() {
                 </div>
                 
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label">計算類型</label>
+                  <label className="form-label">單位</label>
+                  <select 
+                    className="form-select"
+                    value={calcWeightUnit}
+                    onChange={e => setCalcWeightUnit(e.target.value)}
+                  >
+                    <option value="tael">両</option>
+                    <option value="gram">克</option>
+                  </select>
+                </div>
+                
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">價格</label>
                   <select 
                     className="form-select"
                     value={calcType}
                     onChange={e => setCalcType(e.target.value)}
                   >
-                    <option value="sell">按售價</option>
-                    <option value="buy">按回收價</option>
+                    <option value="sell">售價</option>
+                    <option value="buy">回收價</option>
                   </select>
                 </div>
                 
