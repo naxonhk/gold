@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { href: '/calculator', label: '計算機', icon: '🧮' },
   { href: '/settings', label: '設置', icon: '⚙️' },
 ];
+];
 
 export default function Home() {
   const pathname = usePathname();
@@ -39,7 +40,7 @@ export default function Home() {
     <div style={{ paddingBottom: '80px' }}>
       {/* Header */}
       <header style={{ background: 'rgba(10,10,26,0.95)', padding: '16px', position: 'sticky', top: 0, zIndex: 100 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems:Width: ' 'center', max600px', margin: '0 auto' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', maxWidth: '600px', margin: '0 auto' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ fontSize: '24px' }}>🏆</span>
             <span style={{ fontSize: '20px', fontWeight: 'bold', background: 'linear-gradient(45deg,#ffd700,#daa520)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>貴金屬管家</span>
