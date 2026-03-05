@@ -13,26 +13,58 @@ const NAV_ITEMS = [
   { href: '/settings', label: '設置', icon: '⚙️' },
 ];
 
+// Safe price getter with fallback
+const getPrice = (prices, source, key) => {
+  if (!prices || !prices[source] || !prices[source][key]) {
+    return { sell: 0, sellGram: 0, buy: 0, buyGram: 0, exchange: 0, exchangeGram: 0 };
+  }
+  return prices[source][key];
+};
+
 export default function Home() {
   const pathname = usePathname();
   const [selectedSource, setSelectedSource] = useState('chowtaifook');
   const [prices, setPrices] = useState(DEFAULT_PRICES);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const fetchPrices = async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch('/api/prices?t=' + Date.now());
       const data = await res.json();
-      if (data.success) setPrices(data.data);
-    } catch (e) { console.error(e); }
+      if (data.success && data.data) {
+        // Merge with default to ensure all fields exist
+        const mergedPrices = {
+          chowtaifook: { ...DEFAULT_PRICES.chowtaifook, ...data.data.chowtaifook },
+          chowsangsang: { ...DEFAULT_PRICES.chowsangsang, ...data.data.chowsangsang },
+          international: { ...DEFAULT_PRICES.international, ...data.data.international }
+        };
+        setPrices(mergedPrices);
+      }
+    } catch (e) {
+      console.error('Failed to fetch prices:', e);
+      setError('無法獲取金價數據');
+    }
     setLoading(false);
   };
 
-  useEffect(() => { fetchPrices(); }, []);
+  useEffect(() => { 
+    fetchPrices(); 
+  }, []);
 
-  const currentPrices = prices[selectedSource];
-  const historyData = PRICE_HISTORY[selectedSource];
+  const currentPrices = prices[selectedSource] || DEFAULT_PRICES[selectedSource] || {};
+  
+  // Get prices with fallbacks
+  const gold999 = getPrice(prices, 'chowtaifook', 'gold999');
+  const goldPellet = getPrice(prices, 'chowtaifook', 'goldPellet');
+  const goldOrnaments = getPrice(prices, 'chowsangsang', 'goldOrnaments');
+  const goldIngot = getPrice(prices, 'chowsangsang', 'goldIngot');
+  const goldBars = getPrice(prices, 'chowsangsang', 'goldBars');
+  const internationalGold = getPrice(prices, 'international', 'gold');
+
+  const historyData = PRICE_HISTORY[selectedSource] || PRICE_HISTORY.chowtaifook;
 
   return (
     <div style={{ paddingBottom: '80px' }}>
@@ -46,19 +78,51 @@ export default function Home() {
         </div>
       </header>
 
+      {error && (
+        <div style={{ padding: '12px 16px', background: 'rgba(255,92,92,0.2)', color: '#ff5c5c', textAlign: 'center' }}>
+          {error}
+        </div>
+      )}
+
       <div style={{ padding: '16px', maxWidth: '600px', margin: '0 auto' }}>
-        <div style={{ display: 'flex', gap: '10px', background: 'rgba(255,255,255,0.05)', padding: '4px', borderRadius: '12px' }}>
-          <button onClick={() => setSelectedSource('chowtaifook')} style={{ flex: 1, padding: '12px', border: 'none', borderRadius: '10px', cursor: 'pointer', background: selectedSource === 'chowtaifook' ? 'rgba(255,215,0,0.2)' : 'transparent', color: selectedSource === 'chowtaifook' ? '#ffd700' : '#888', fontWeight: '600' }}>
+        <div style={{ display: 'flex', gap: '8px', background: 'rgba(255,255,255,0.05)', padding: '4px', borderRadius: '12px' }}>
+          <button onClick={() => setSelectedSource('international')} style={{ flex: 1, padding: '10px', border: 'none', borderRadius: '10px', cursor: 'pointer', background: selectedSource === 'international' ? 'rgba(255,215,0,0.2)' : 'transparent', color: selectedSource === 'international' ? '#ffd700' : '#888', fontWeight: '600', fontSize: '13px' }}>
+            🌍 國際
+          </button>
+          <button onClick={() => setSelectedSource('chowtaifook')} style={{ flex: 1, padding: '10px', border: 'none', borderRadius: '10px', cursor: 'pointer', background: selectedSource === 'chowtaifook' ? 'rgba(255,215,0,0.2)' : 'transparent', color: selectedSource === 'chowtaifook' ? '#ffd700' : '#888', fontWeight: '600', fontSize: '13px' }}>
             🏪 周大福
           </button>
-          <button onClick={() => setSelectedSource('chowsangsang')} style={{ flex: 1, padding: '12px', border: 'none', borderRadius: '10px', cursor: 'pointer', background: selectedSource === 'chowsangsang' ? 'rgba(255,215,0,0.2)' : 'transparent', color: selectedSource === 'chowsangsang' ? '#ffd700' : '#888', fontWeight: '600' }}>
+          <button onClick={() => setSelectedSource('chowsangsang')} style={{ flex: 1, padding: '10px', border: 'none', borderRadius: '10px', cursor: 'pointer', background: selectedSource === 'chowsangsang' ? 'rgba(255,215,0,0.2)' : 'transparent', color: selectedSource === 'chowsangsang' ? '#ffd700' : '#888', fontWeight: '600', fontSize: '13px' }}>
             🏪 周生生
           </button>
         </div>
       </div>
 
       <div style={{ padding: '0 16px', maxWidth: '600px', margin: '0 auto' }}>
-        {selectedSource === 'chowtaifook' ? (
+        {selectedSource === 'international' && (
+          <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: '16px', padding: '20px', marginBottom: '16px', border: '1px solid rgba(255,215,0,0.2)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#ffd700' }}>🌍 國際黃金 (美元/盎司)</span>
+              <button onClick={fetchPrices} disabled={loading} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px' }}>{loading ? '🔄' : '🔄'}</button>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div style={{ background: 'rgba(0,214,143,0.1)', padding: '16px', borderRadius: '12px', textAlign: 'center' }}>
+                <div style={{ fontSize: '12px', color: '#888', marginBottom: '4px' }}>現價</div>
+                <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#00d68f' }}>${internationalGold.sell.toLocaleString()}</div>
+                <div style={{ fontSize: '12px', color: '#888' }}>USD/oz</div>
+              </div>
+              <div style={{ background: 'rgba(92,159,255,0.1)', padding: '16px', borderRadius: '12px', textAlign: 'center' }}>
+                <div style={{ fontSize: '12px', color: '#888', marginBottom: '4px' }}>變動</div>
+                <div style={{ fontSize: '24px', fontWeight: 'bold', color: internationalGold.change >= 0 ? '#00d68f' : '#ff5c5c' }}>
+                  {internationalGold.change >= 0 ? '↑' : '↓'} {Math.abs(internationalGold.change || 0).toFixed(2)}%
+                </div>
+                <div style={{ fontSize: '12px', color: '#888' }}>今日</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {selectedSource === 'chowtaifook' && (
           <>
             <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: '16px', padding: '20px', marginBottom: '16px', border: '1px solid rgba(255,215,0,0.2)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
@@ -68,13 +132,13 @@ export default function Home() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div style={{ background: 'rgba(0,214,143,0.1)', padding: '16px', borderRadius: '12px', textAlign: 'center' }}>
                   <div style={{ fontSize: '12px', color: '#888', marginBottom: '4px' }}>售價 Sell</div>
-                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#00d68f' }}>HK$ {currentPrices.gold999.sell.toLocaleString()}</div>
-                  <div style={{ fontSize: '12px', color: '#888' }}>毎克 HK$ {currentPrices.gold999.sellGram}</div>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#00d68f' }}>HK$ {gold999.sell?.toLocaleString() || 0}</div>
+                  <div style={{ fontSize: '12px', color: '#888' }}>毎克 HK$ {gold999.sellGram || 0}</div>
                 </div>
                 <div style={{ background: 'rgba(255,92,92,0.1)', padding: '16px', borderRadius: '12px', textAlign: 'center' }}>
                   <div style={{ fontSize: '12px', color: '#888', marginBottom: '4px' }}>回收價 Buy</div>
-                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#ff5c5c' }}>HK$ {currentPrices.gold999.buy.toLocaleString()}</div>
-                  <div style={{ fontSize: '12px', color: '#888' }}>毎克 HK$ {currentPrices.gold999.buyGram}</div>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#ff5c5c' }}>HK$ {gold999.buy?.toLocaleString() || 0}</div>
+                  <div style={{ fontSize: '12px', color: '#888' }}>毎克 HK$ {gold999.buyGram || 0}</div>
                 </div>
               </div>
             </div>
@@ -84,18 +148,20 @@ export default function Home() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div style={{ background: 'rgba(0,214,143,0.1)', padding: '16px', borderRadius: '12px', textAlign: 'center' }}>
                   <div style={{ fontSize: '12px', color: '#888', marginBottom: '4px' }}>售價 Sell</div>
-                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#00d68f' }}>HK$ {currentPrices.goldPellet.sell.toLocaleString()}</div>
-                  <div style={{ fontSize: '12px', color: '#888' }}>毎克 HK$ {currentPrices.goldPellet.sellGram}</div>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#00d68f' }}>HK$ {goldPellet.sell?.toLocaleString() || 0}</div>
+                  <div style={{ fontSize: '12px', color: '#888' }}>毎克 HK$ {goldPellet.sellGram || 0}</div>
                 </div>
                 <div style={{ background: 'rgba(255,92,92,0.1)', padding: '16px', borderRadius: '12px', textAlign: 'center' }}>
                   <div style={{ fontSize: '12px', color: '#888', marginBottom: '4px' }}>回收價 Buy</div>
-                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#ff5c5c' }}>HK$ {currentPrices.goldPellet.buy.toLocaleString()}</div>
-                  <div style={{ fontSize: '12px', color: '#888' }}>毎克 HK$ {currentPrices.goldPellet.buyGram}</div>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#ff5c5c' }}>HK$ {goldPellet.buy?.toLocaleString() || 0}</div>
+                  <div style={{ fontSize: '12px', color: '#888' }}>毎克 HK$ {goldPellet.buyGram || 0}</div>
                 </div>
               </div>
             </div>
           </>
-        ) : (
+        )}
+
+        {selectedSource === 'chowsangsang' && (
           <>
             <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: '16px', padding: '20px', marginBottom: '16px', border: '1px solid rgba(255,215,0,0.2)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
@@ -105,15 +171,15 @@ export default function Home() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
                 <div style={{ background: 'rgba(0,214,143,0.1)', padding: '12px', borderRadius: '10px', textAlign: 'center' }}>
                   <div style={{ fontSize: '11px', color: '#888' }}>售價</div>
-                  <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#00d68f' }}>${currentPrices.goldOrnaments.sell.toLocaleString()}</div>
+                  <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#00d68f' }}>${goldOrnaments.sell?.toLocaleString() || 0}</div>
                 </div>
                 <div style={{ background: 'rgba(92,159,255,0.1)', padding: '12px', borderRadius: '10px', textAlign: 'center' }}>
                   <div style={{ fontSize: '11px', color: '#888' }}>兌換</div>
-                  <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#5c9fff' }}>${currentPrices.goldOrnaments.exchange.toLocaleString()}</div>
+                  <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#5c9fff' }}>${goldOrnaments.exchange?.toLocaleString() || 0}</div>
                 </div>
                 <div style={{ background: 'rgba(255,92,92,0.1)', padding: '12px', borderRadius: '10px', textAlign: 'center' }}>
                   <div style={{ fontSize: '11px', color: '#888' }}>回收</div>
-                  <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#ff5c5c' }}>${currentPrices.goldOrnaments.buy.toLocaleString()}</div>
+                  <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#ff5c5c' }}>${goldOrnaments.buy?.toLocaleString() || 0}</div>
                 </div>
               </div>
             </div>
@@ -123,11 +189,11 @@ export default function Home() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div style={{ background: 'rgba(0,214,143,0.1)', padding: '16px', borderRadius: '12px', textAlign: 'center' }}>
                   <div style={{ fontSize: '12px', color: '#888', marginBottom: '4px' }}>金條售價</div>
-                  <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#00d68f' }}>HK$ {currentPrices.goldIngot.sell.toLocaleString()}</div>
+                  <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#00d68f' }}>HK$ {goldIngot.sell?.toLocaleString() || 0}</div>
                 </div>
                 <div style={{ background: 'rgba(255,92,92,0.1)', padding: '16px', borderRadius: '12px', textAlign: 'center' }}>
                   <div style={{ fontSize: '12px', color: '#888', marginBottom: '4px' }}>金粒售價</div>
-                  <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#ff5c5c' }}>HK$ {currentPrices.goldBars.sell.toLocaleString()}</div>
+                  <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#00d68f' }}>HK$ {goldBars.sell?.toLocaleString() || 0}</div>
                 </div>
               </div>
             </div>
@@ -142,10 +208,10 @@ export default function Home() {
             <span style={{ fontSize: '12px', color: '#888' }}>999.9 Gold</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '120px', gap: '8px' }}>
-            {PRICE_HISTORY.labels.map((label, i) => {
-              const value = historyData.gold999[i];
-              const max = Math.max(...historyData.gold999);
-              const min = Math.min(...historyData.gold999);
+            {(historyData.gold999 || historyData.gold || []).map((value, i) => {
+              const values = historyData.gold999 || historyData.gold || [];
+              const max = Math.max(...values, 1);
+              const min = Math.min(...values, 0);
               const height = ((value - min) / (max - min)) * 80 + 20;
               return (
                 <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
@@ -153,7 +219,7 @@ export default function Home() {
                     <div style={{ width: '70%', background: 'linear-gradient(180deg, #ffd700, #daa520)', borderRadius: '6px', height: `${height}px` }}></div>
                   </div>
                   <span style={{ fontSize: '10px', color: '#888' }}>${(value/1000).toFixed(1)}k</span>
-                  <span style={{ fontSize: '10px', color: '#666' }}>{label}</span>
+                  <span style={{ fontSize: '10px', color: '#666' }}>{PRICE_HISTORY.labels[i]}</span>
                 </div>
               );
             })}
