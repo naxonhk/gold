@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
-// Static gold price data - no API call needed
+// Default gold price data
 const DEFAULT_PRICES = {
   chowtaifook: { 
     gold999: { sell: 57890, sellGram: 1546.66, buy: 46310, buyGram: 1237.28 }, 
@@ -20,7 +20,29 @@ const DEFAULT_PRICES = {
 export default function Home() {
   const [prices, setPrices] = useState(DEFAULT_PRICES);
   const [selectedSource, setSelectedSource] = useState('chowtaifook');
-  const [lastUpdate] = useState(new Date().toISOString());
+  const [loading, setLoading] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState(null);
+
+  const fetchPrices = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/prices?t=' + Date.now());
+      const result = await response.json();
+      
+      if (result.success && result.data) {
+        setPrices(result.data);
+        setLastUpdate(new Date().toISOString());
+      }
+    } catch (error) {
+      console.error('Failed to fetch prices:', error);
+    }
+    setLoading(false);
+  };
+
+  // Fetch prices once on mount
+  useEffect(() => {
+    fetchPrices();
+  }, []);
 
   return (
     <main>
@@ -113,6 +135,13 @@ export default function Home() {
         <div className="container">
           <div className="price-header">
             <h2 className="section-title" style={{ textAlign: 'left', marginBottom: 0 }}>今日金價</h2>
+            <button 
+              onClick={fetchPrices} 
+              className="btn btn-secondary btn-sm"
+              disabled={loading}
+            >
+              {loading ? '🔄 載入中...' : '🔄 刷新'}
+            </button>
           </div>
           
           <div className="price-source-tabs">
@@ -207,7 +236,7 @@ export default function Home() {
           </div>
           
           <div className="last-update">
-            數據更新日期：2024年3月5日
+            {lastUpdate ? `最後更新：${new Date(lastUpdate).toLocaleString('zh-HK')}` : '點擊刷新按鈕更新價格'}
           </div>
         </div>
       </section>
