@@ -1,24 +1,44 @@
 const express = require('express');
 const fetch = require('node-fetch');
-const admin = require('firebase-admin');
-
-// Initialize Firebase Admin
-const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT || '{}');
-
-try {
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    databaseURL: `https://${process.env.FIREBASE_PROJECT_ID || 'gold-6b24b'}.firebaseio.com`
-  });
-} catch (e) {
-  console.log('Firebase already initialized or credentials not set');
-}
-
-const db = admin.firestore();
-const pricesRef = db.collection('prices').doc('latest');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Try to load Firebase Admin
+let admin = null;
+let db = null;
+let pricesRef = null;
+
+async function initFirebase() {
+  try {
+    // Dynamic import for firebase-admin
+    const adminModule = await import('firebase-admin');
+    admin = adminModule.default;
+
+    const serviceAccountStr = process.env.FIREBASE_SERVICE_ACCOUNT;
+    const projectId = process.env.FIREBASE_PROJECT_ID;
+
+    if (serviceAccountStr && projectId) {
+      const serviceAccount = JSON.parse(serviceAccountStr);
+      
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+        databaseURL: `https://${projectId}.firebaseio.com`
+      });
+
+      db = admin.firestore();
+      pricesRef = db.collection('prices').doc('latest');
+      console.log('Firebase initialized successfully!');
+      return true;
+    } else {
+      console.log('Firebase credentials not set, using fallback mode');
+      return false;
+    }
+  } catch (error) {
+    console.error('Firebase init error:', error.message);
+    return false;
+  }
+}
 
 // Fetch with simple HTTP
 async function fetchWithHttp(url) {
@@ -147,10 +167,12 @@ async function scrapePrices() {
       scrapedAt: new Date().toISOString()
     };
     
-    // Save to Firestore
-    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    // Save to Firestore if available
+    if (pricesRef) {
       await pricesRef.set(priceData);
-      console.log('Saved to Firestore');
+      console.log('Saved to Firebase!');
+    } else {
+      console.log('No Firebase, using local cache only');
     }
     
     return priceData;
@@ -163,14 +185,15 @@ async function scrapePrices() {
 // API endpoint to get prices
 app.get('/api/prices', async (req, res) => {
   try {
-    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    // If Firebase is available, try to get cached data
+    if (pricesRef) {
       const doc = await pricesRef.get();
       if (doc.exists) {
         return res.json({ success: true, data: doc.data() });
       }
     }
     
-    // If no Firebase, scrape now
+    // Otherwise scrape now
     const prices = await scrapePrices();
     res.json({ success: true, data: prices });
   } catch (error) {
@@ -186,17 +209,18 @@ app.get('/api/scrape', async (req, res) => {
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', time: new Date().toISOString() });
+  res.json({ status: 'ok', firebase: !!pricesRef, time: new Date().toISOString() });
 });
 
-// Schedule scraper every 6 hours
-const SCRAPE_INTERVAL = 6 * 60 * 60 * 1000; // 6 hours
-setInterval(scrapePrices, SCRAPE_INTERVAL);
-
-// Initial scrape on startup
-scrapePrices();
-
-app.listen(PORT, () => {
-  console.log(`Gold price scraper running on port ${PORT}`);
-  console.log(`Scraping every ${SCRAPE_INTERVAL / 3600000} hours`);
+// Start server
+initFirebase().then(() => {
+  app.listen(PORT, () => {
+    console.log(`Gold price scraper running on port ${PORT}`);
+  });
+  
+  // Initial scrape
+  scrapePrices();
+  
+  // Schedule scraper every 6 hours
+  setInterval(scrapePrices, 6 * 60 * 60 * 1000);
 });
