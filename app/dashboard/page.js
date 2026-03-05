@@ -214,14 +214,7 @@ export default function Dashboard() {
   const fetchPrices = async (force = false) => {
     // No API call needed - we use static data
     // This function kept for potential future API integration
-    setRefreshing(false);
   };
-
-  useEffect(() => {
-    fetchPrices();
-    const interval = setInterval(() => fetchPrices(true), 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   const handleCalculate = () => {
     if (!calcWeight) return;
@@ -454,13 +447,6 @@ export default function Dashboard() {
                   <option value="chowtaifook">周大福</option>
                   <option value="chowsangsang">周生生</option>
                 </select>
-                <button 
-                  onClick={() => { setRefreshing(true); fetchPrices(true); }} 
-                  className="btn btn-secondary btn-sm"
-                  disabled={refreshing}
-                >
-                  {refreshing ? '🔄' : '🔄 刷新'}
-                </button>
               </div>
             </div>
 
