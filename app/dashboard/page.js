@@ -221,7 +221,16 @@ export default function Dashboard() {
     await dbRef.current.collection('users').doc(user.uid).collection('records').doc(id).delete();
   };
 
-  const getPrice = (priceObj, type) => {
+  // Helper function to format price based on preferred unit
+  const formatPrice = (priceObj, type) => {
+    if (!priceObj) return '--;
+    if (preferredUnit === 'gram') {
+      return priceObj[`${type}Gram`]?.toFixed(2) || '--';
+    }
+    return priceObj[type]?.toLocaleString() || '--';
+  };
+
+  const formatPriceWithUnit = (priceObj, type) => {
     if (!priceObj) return { value: '--', unit: '' };
     if (preferredUnit === 'gram') {
       return { 
@@ -235,9 +244,9 @@ export default function Dashboard() {
     };
   };
 
-  const getUnitLabel = () => preferredUnit === 'gram' ? '克' : '両';
+  const getUnitSuffix = () => preferredUnit === 'gram' ? '（毎克）' : '（毎両）';
 
-  const handleCalculate = () => {
+  const filteredRecords = filter === 'all'
     if (!calcWeight) return;
     
     const sourcePrices = prices[selectedSource];
