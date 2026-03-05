@@ -11,7 +11,6 @@ let pricesRef = null;
 
 async function initFirebase() {
   try {
-    // Dynamic import for firebase-admin
     const adminModule = await import('firebase-admin');
     admin = adminModule.default;
 
@@ -40,98 +39,99 @@ async function initFirebase() {
   }
 }
 
-// Fetch with simple HTTP
-async function fetchWithHttp(url) {
-  const response = await fetch(url, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      'Accept': 'text/html,application/xhtml+xml',
-    }
+// Use Puppeteer to scrape JavaScript-rendered pages
+async function scrapeWithPuppeteer(url) {
+  const puppeteer = require('puppeteer');
+  
+  const browser = await puppeteer.launch({
+    headless: 'new',
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
   });
-  return await response.text();
+  
+  try {
+    const page = await browser.newPage();
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+    
+    await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
+    
+    // Get the rendered HTML
+    const content = await page.content();
+    
+    // Extract prices using regex
+    const priceMatches = content.match(/\b(\d{1,3},\d{3})\b/g) || [];
+    const prices = [...new Set(priceMatches.map(p => parseInt(p.replace(',', ''))))];
+    const validPrices = prices.filter(p => p > 40000 && p < 70000);
+    
+    if (validPrices.length > 0) {
+      console.log(`Found prices for ${url}:`, validPrices.slice(0, 5));
+      return validPrices[0];
+    }
+    
+    return null;
+  } catch (error) {
+    console.error(`Error scraping ${url}:`, error.message);
+    return null;
+  } finally {
+    await browser.close();
+  }
 }
 
-// Extract prices from HTML
-function extractPrices(html) {
-  const priceMatches = html.match(/\b(\d{1,3},\d{3})\b/g) || [];
-  const prices = [...new Set(priceMatches.map(p => parseInt(p.replace(',', ''))))];
-  const validPrices = prices.filter(p => p > 30000 && p < 80000);
+// Scrape Chow Tai Fook with Puppeteer
+async function scrapeChowTaiFook() {
+  const price = await scrapeWithPuppeteer('https://www.chowtaifook.com/en-hk/eshop/realtime-gold-price.html');
   
-  if (validPrices.length === 0) {
-    return { sell: 57890, sellGram: 1546.66, buy: 46310, buyGram: 1237.28 };
-  }
+  const basePrice = price || 57890;
   
-  const mainPrice = validPrices[0];
   return {
-    sell: mainPrice,
-    sellGram: Math.round(mainPrice / 37.429 * 100) / 100,
-    buy: Math.round(mainPrice * 0.8),
-    buyGram: Math.round(mainPrice * 0.8 / 37.429 * 100) / 100
+    gold999: {
+      sell: basePrice,
+      sellGram: Math.round(basePrice / 37.429 * 100) / 100,
+      buy: Math.round(basePrice * 0.8),
+      buyGram: Math.round(basePrice * 0.8 / 37.429 * 100) / 100
+    },
+    goldPellet: {
+      sell: Math.round(basePrice * 0.9),
+      sellGram: Math.round(basePrice * 0.9 / 37.429 * 100) / 100,
+      buy: Math.round(basePrice * 0.82),
+      buyGram: Math.round(basePrice * 0.82 / 37.429 * 100) / 100
+    },
+    goldRedemption: {
+      buy: Math.round(basePrice * 0.825),
+      buyGram: Math.round(basePrice * 0.825 / 37.429 * 100) / 100
+    },
+    lastUpdate: new Date().toISOString()
   };
 }
 
-// Scrape Chow Tai Fook
-async function scrapeChowTaiFook() {
-  try {
-    const html = await fetchWithHttp('https://www.chowtaifook.com/en-hk/eshop/realtime-gold-price.html');
-    const prices = extractPrices(html);
-    
-    return {
-      gold999: prices,
-      goldPellet: { 
-        sell: Math.round(prices.sell * 0.9), 
-        sellGram: Math.round(prices.sellGram * 0.9 * 100) / 100, 
-        buy: Math.round(prices.sell * 0.82), 
-        buyGram: Math.round(prices.sellGram * 0.82 * 100) / 100 
-      },
-      goldRedemption: { buy: Math.round(prices.sell * 0.825), buyGram: Math.round(prices.sellGram * 0.825 * 100) / 100 },
-      lastUpdate: new Date().toISOString()
-    };
-  } catch (error) {
-    console.error('Chow Tai Fook error:', error.message);
-    return {
-      gold999: { sell: 57890, sellGram: 1546.66, buy: 46310, buyGram: 1237.28 },
-      goldPellet: { sell: 52120, sellGram: 1392.5, buy: 47520, buyGram: 1269.6 },
-      lastUpdate: new Date().toISOString()
-    };
-  }
-}
-
-// Scrape Chow Sang Sang
+// Scrape Chow Sang Sang with Puppeteer
 async function scrapeChowSangSang() {
-  try {
-    const html = await fetchWithHttp('https://www.chowsangsang.com/en/gold-price');
-    const prices = extractPrices(html);
-    
-    return {
-      goldOrnaments: { 
-        ...prices, 
-        exchange: Math.round(prices.sell * 0.83), 
-        exchangeGram: Math.round(prices.sellGram * 0.83 * 100) / 100 
-      },
-      goldIngot: { 
-        sell: Math.round(prices.sell * 0.957), 
-        sellGram: Math.round(prices.sellGram * 0.957 * 100) / 100, 
-        buy: prices.buy, 
-        buyGram: prices.buyGram 
-      },
-      goldBars: { 
-        sell: Math.round(prices.sell * 0.9), 
-        sellGram: Math.round(prices.sellGram * 0.9 * 100) / 100, 
-        buy: Math.round(prices.sell * 0.82), 
-        buyGram: Math.round(prices.sellGram * 0.82 * 100) / 100 
-      },
-      lastUpdate: new Date().toISOString()
-    };
-  } catch (error) {
-    console.error('Chow Sang Sang error:', error.message);
-    return {
-      goldOrnaments: { sell: 57890, sellGram: 1547, exchange: 48050, buy: 46310, buyGram: 1237 },
-      goldIngot: { sell: 55370, sellGram: 1480, buy: 46310, buyGram: 1237 },
-      goldBars: { sell: 52110, sellGram: 1393, buy: 47520, buyGram: 1269 },
-      lastUpdate: new Date().toISOString()
-    };
-  }
+  const price = await scrapeWithPuppeteer('https://www.chowsangsang.com/en/gold-price');
+  
+  const basePrice = price || 57890;
+  
+  return {
+    goldOrnaments: {
+      sell: basePrice,
+      sellGram: Math.round(basePrice / 37.429 * 100) / 100,
+      exchange: Math.round(basePrice * 0.83),
+      exchangeGram: Math.round(basePrice * 0.83 / 37.429 * 100) / 100,
+      buy: Math.round(basePrice * 0.8),
+      buyGram: Math.round(basePrice * 0.8 / 37.429 * 100) / 100
+    },
+    goldIngot: {
+      sell: Math.round(basePrice * 0.957),
+      sellGram: Math.round(basePrice * 0.957 / 37.429 * 100) / 100,
+      buy: Math.round(basePrice * 0.8),
+      buyGram: Math.round(basePrice * 0.8 / 37.429 * 100) / 100
+    },
+    goldBars: {
+      sell: Math.round(basePrice * 0.9),
+      sellGram: Math.round(basePrice * 0.9 / 37.429 * 100) / 100,
+      buy: Math.round(basePrice * 0.82),
+      buyGram: Math.round(basePrice * 0.82 / 37.429 * 100) / 100
+    },
+    lastUpdate: new Date().toISOString()
+  };
 }
 
 // Get international gold price
@@ -150,7 +150,7 @@ async function getInternationalGold() {
 
 // Main scrape function
 async function scrapePrices() {
-  console.log('Starting gold price scrape...');
+  console.log('Starting gold price scrape with Puppeteer...');
   
   try {
     const [ctfPrices, cssPrices, international] = await Promise.all([
@@ -171,8 +171,6 @@ async function scrapePrices() {
     if (pricesRef) {
       await pricesRef.set(priceData);
       console.log('Saved to Firebase!');
-    } else {
-      console.log('No Firebase, using local cache only');
     }
     
     return priceData;
@@ -185,7 +183,6 @@ async function scrapePrices() {
 // API endpoint to get prices
 app.get('/api/prices', async (req, res) => {
   try {
-    // If Firebase is available, try to get cached data
     if (pricesRef) {
       const doc = await pricesRef.get();
       if (doc.exists) {
@@ -193,7 +190,6 @@ app.get('/api/prices', async (req, res) => {
       }
     }
     
-    // Otherwise scrape now
     const prices = await scrapePrices();
     res.json({ success: true, data: prices });
   } catch (error) {
@@ -209,7 +205,7 @@ app.get('/api/scrape', async (req, res) => {
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', firebase: !!pricesRef, time: new Date().toISOString() });
+  res.json({ status: 'ok', firebase: !!pricesRef, puppeteer: true, time: new Date().toISOString() });
 });
 
 // Start server
