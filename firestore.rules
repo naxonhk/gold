@@ -1,0 +1,15 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Anyone can read prices
+    match /prices/{document=**} {
+      allow read: if true;
+      allow write: if false; // Only functions can write
+    }
+    
+    // User records - authenticated users only
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}

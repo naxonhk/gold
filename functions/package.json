@@ -1,0 +1,18 @@
+{
+  "name": "gold-price-scraper",
+  "version": "1.0.0",
+  "description": "Scrapes gold prices and stores in Firestore",
+  "main": "index.js",
+  "scripts": {
+    "serve": "firebase emulators:start --only functions",
+    "deploy": "firebase deploy --only functions"
+  },
+  "engines": {
+    "node": "18"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.0.0",
+    "firebase-functions": "^4.5.0",
+    "puppeteer": "^21.0.0"
+  }
+}
