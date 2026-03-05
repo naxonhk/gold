@@ -5,14 +5,12 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { DEFAULT_PRICES, PRICE_HISTORY } from '@/lib/prices';
 
-// Bottom navigation items
 const NAV_ITEMS = [
   { href: '/', label: '首頁', icon: '🏠' },
   { href: '/prices', label: '金價', icon: '📊' },
   { href: '/records', label: '記錄', icon: '📒' },
   { href: '/calculator', label: '計算機', icon: '🧮' },
   { href: '/settings', label: '設置', icon: '⚙️' },
-];
 ];
 
 export default function Home() {
@@ -38,7 +36,6 @@ export default function Home() {
 
   return (
     <div style={{ paddingBottom: '80px' }}>
-      {/* Header */}
       <header style={{ background: 'rgba(10,10,26,0.95)', padding: '16px', position: 'sticky', top: 0, zIndex: 100 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', maxWidth: '600px', margin: '0 auto' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -49,7 +46,6 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Source Selector */}
       <div style={{ padding: '16px', maxWidth: '600px', margin: '0 auto' }}>
         <div style={{ display: 'flex', gap: '10px', background: 'rgba(255,255,255,0.05)', padding: '4px', borderRadius: '12px' }}>
           <button onClick={() => setSelectedSource('chowtaifook')} style={{ flex: 1, padding: '12px', border: 'none', borderRadius: '10px', cursor: 'pointer', background: selectedSource === 'chowtaifook' ? 'rgba(255,215,0,0.2)' : 'transparent', color: selectedSource === 'chowtaifook' ? '#ffd700' : '#888', fontWeight: '600' }}>
@@ -61,11 +57,9 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Price Cards */}
       <div style={{ padding: '0 16px', maxWidth: '600px', margin: '0 auto' }}>
         {selectedSource === 'chowtaifook' ? (
           <>
-            {/* 999.9 Gold */}
             <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: '16px', padding: '20px', marginBottom: '16px', border: '1px solid rgba(255,215,0,0.2)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                 <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#ffd700' }}>💎 999.9 黃金</span>
@@ -85,7 +79,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Gold Pellet */}
             <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: '16px', padding: '20px', marginBottom: '16px', border: '1px solid rgba(255,215,0,0.15)' }}>
               <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#ffd700', marginBottom: '16px' }}>🪙 黃金粒 (投資黃金)</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
@@ -104,7 +97,6 @@ export default function Home() {
           </>
         ) : (
           <>
-            {/* Gold Ornaments */}
             <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: '16px', padding: '20px', marginBottom: '16px', border: '1px solid rgba(255,215,0,0.2)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                 <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#ffd700' }}>💍 黃金飾品</span>
@@ -126,7 +118,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Gold Bars */}
             <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: '16px', padding: '20px', marginBottom: '16px', border: '1px solid rgba(255,215,0,0.15)' }}>
               <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#ffd700', marginBottom: '16px' }}>📐 金條 / 金粒</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
@@ -144,22 +135,18 @@ export default function Home() {
         )}
       </div>
 
-      {/* Price Graph - Simple CSS Line */}
       <div style={{ padding: '16px', maxWidth: '600px', margin: '0 auto' }}>
         <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: '16px', padding: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#ffd700' }}>📈 一週金價趨勢</span>
             <span style={{ fontSize: '12px', color: '#888' }}>999.9 Gold</span>
           </div>
-          
-          {/* Simple bar chart */}
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '120px', gap: '8px' }}>
             {PRICE_HISTORY.labels.map((label, i) => {
               const value = historyData.gold999[i];
               const max = Math.max(...historyData.gold999);
               const min = Math.min(...historyData.gold999);
               const height = ((value - min) / (max - min)) * 80 + 20;
-              
               return (
                 <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                   <div style={{ width: '100%', background: 'rgba(255,215,0,0.2)', borderRadius: '6px', height: '80px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
@@ -174,14 +161,12 @@ export default function Home() {
         </div>
       </div>
 
-      {/* CTA */}
       <div style={{ padding: '16px', maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
         <Link href="/records" style={{ display: 'block', padding: '16px', background: 'linear-gradient(135deg, #ffd700, #daa520)', color: '#0a0a1a', borderRadius: '12px', textDecoration: 'none', fontWeight: 'bold', fontSize: '16px' }}>
           開始記錄我的黃金資產 →
         </Link>
       </div>
 
-      {/* Bottom Navigation */}
       <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'rgba(10,10,26,0.98)', borderTop: '1px solid rgba(255,215,0,0.2)', padding: '8px 16px', paddingBottom: 'max(8px, env(safe-area-inset-bottom))', display: 'flex', justifyContent: 'space-around', zIndex: 100 }}>
         {NAV_ITEMS.map((item) => (
           <Link key={item.href} href={item.href} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', textDecoration: 'none', color: pathname === item.href ? '#ffd700' : '#666', fontSize: '10px' }}>

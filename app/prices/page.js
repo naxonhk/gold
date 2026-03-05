@@ -42,7 +42,6 @@ export default function Prices() {
       </header>
 
       <div style={{ padding: '16px', maxWidth: '600px', margin: '0 auto' }}>
-        {/* Source Tabs */}
         <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
           <button onClick={() => setSelectedSource('chowtaifook')} style={{ flex: 1, padding: '14px', border: 'none', borderRadius: '12px', cursor: 'pointer', background: selectedSource === 'chowtaifook' ? 'rgba(255,215,0,0.2)' : 'rgba(255,255,255,0.05)', color: selectedSource === 'chowtaifook' ? '#ffd700' : '#888', fontWeight: '600' }}>
             🏪 周大福
@@ -67,10 +66,9 @@ export default function Prices() {
         )}
       </div>
 
-      {/* Bottom Navigation */}
       <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'rgba(10,10,26,0.98)', borderTop: '1px solid rgba(255,215,0,0.2)', padding: '8px 16px', paddingBottom: 'max(8px, env(safe-area-inset-bottom))', display: 'flex', justifyContent: 'space-around', zIndex: 100 }}>
         {NAV_ITEMS.map((item) => (
-          <Link key={item.href} href={item.href} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', textDecoration color: pathname ===: 'none', item.href ? '#ffd700' : '#666', fontSize: '10px' }}>
+          <Link key={item.href} href={item.href} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', textDecoration: 'none', color: pathname === item.href ? '#ffd700' : '#666', fontSize: '10px' }}>
             <span style={{ fontSize: '20px' }}>{item.icon}</span>
             <span>{item.label}</span>
           </Link>

@@ -1,10 +1,9 @@
 {
   "/_not-found": "app/_not-found.js",
   "/calculator/page": "app/calculator/page.js",
-  "/dashboard/page": "app/dashboard/page.js",
+  "/prices/page": "app/prices/page.js",
   "/page": "app/page.js",
   "/records/page": "app/records/page.js",
-  "/prices/page": "app/prices/page.js",
   "/settings/page": "app/settings/page.js",
   "/api/prices/route": "app/api/prices/route.js"
 }
