@@ -2,267 +2,193 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { DEFAULT_PRICES, PRICE_HISTORY } from '@/lib/prices';
 
-// Default gold price data
-const DEFAULT_PRICES = {
-  chowtaifook: { 
-    gold999: { sell: 57890, sellGram: 1546.66, buy: 46310, buyGram: 1237.28 }, 
-    goldPellet: { sell: 52120, sellGram: 1392.5, buy: 47520, buyGram: 1269.6 },
-    goldRedemption: { buy: 47810, buyGram: 1277.35 }
-  },
-  chowsangsang: { 
-    goldOrnaments: { sell: 57890, sellGram: 1547, exchange: 48050, exchangeGram: 1283, buy: 46310, buyGram: 1237 }, 
-    goldIngot: { sell: 55370, sellGram: 1480, buy: 46310, buyGram: 1237 }, 
-    goldBars: { sell: 52110, sellGram: 1393, buy: 47520, buyGram: 1269 }
-  }
-};
+// Bottom navigation items
+const NAV_ITEMS = [
+  { href: '/', label: '首頁', icon: '🏠' },
+  { href: '/prices', label: '金價', icon: '📊' },
+  { href: '/records', label: '記錄', icon: '📒' },
+  { href: '/calculator', label: '計算機', icon: '🧮' },
+  { href: '/settings', label: '設置', icon: '⚙️' },
+];
 
 export default function Home() {
-  const [prices, setPrices] = useState(DEFAULT_PRICES);
+  const pathname = usePathname();
   const [selectedSource, setSelectedSource] = useState('chowtaifook');
+  const [prices, setPrices] = useState(DEFAULT_PRICES);
   const [loading, setLoading] = useState(false);
-  const [lastUpdate, setLastUpdate] = useState(null);
 
   const fetchPrices = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/prices?t=' + Date.now());
-      const result = await response.json();
-      
-      if (result.success && result.data) {
-        setPrices(result.data);
-        setLastUpdate(new Date().toISOString());
-      }
-    } catch (error) {
-      console.error('Failed to fetch prices:', error);
-    }
+      const res = await fetch('/api/prices?t=' + Date.now());
+      const data = await res.json();
+      if (data.success) setPrices(data.data);
+    } catch (e) { console.error(e); }
     setLoading(false);
   };
 
-  // Fetch prices once on mount
-  useEffect(() => {
-    fetchPrices();
-  }, []);
+  useEffect(() => { fetchPrices(); }, []);
+
+  const currentPrices = prices[selectedSource];
+  const historyData = PRICE_HISTORY[selectedSource];
 
   return (
-    <main>
+    <div style={{ paddingBottom: '80px' }}>
       {/* Header */}
-      <header className="header">
-        <div className="container">
-          <div className="header-content">
-            <Link href="/" className="logo">
-              <span className="logo-icon">🏆</span>
-              <span className="logo-text">貴金屬管家</span>
-            </Link>
-            
-            <nav className="nav">
-              <Link href="/" className="nav-link active">首頁</Link>
-              <Link href="/dashboard" className="nav-link">我的資產</Link>
-            </nav>
-            
-            <div className="user-section">
-              <Link href="/dashboard" className="btn btn-primary btn-sm">
-                開始使用
-              </Link>
-            </div>
+      <header style={{ background: 'rgba(10,10,26,0.95)', padding: '16px', position: 'sticky', top: 0, zIndex: 100 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems:Width: ' 'center', max600px', margin: '0 auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '24px' }}>🏆</span>
+            <span style={{ fontSize: '20px', fontWeight: 'bold', background: 'linear-gradient(45deg,#ffd700,#daa520)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>貴金屬管家</span>
           </div>
+          <Link href="/settings" style={{ color: '#ffd700', textDecoration: 'none' }}>登入</Link>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="hero-section">
-        <div className="container">
-          <h1 className="hero-title">
-            貴金屬<span>管家</span>
-          </h1>
-          <p className="hero-subtitle">
-            看著保險櫃那一堆金銀財寶卻不知道它們價值多少，究竟是賺了還是虧了。
-            首創將金額自動換算為黃金克重，讓您輕鬆管理貴金屬資產。
-          </p>
-          <div className="hero-buttons">
-            <Link href="/dashboard" className="btn btn-primary">
-              立即開始
-            </Link>
-            <a href="#prices" className="btn btn-secondary">
-              查看金價
-            </a>
+      {/* Source Selector */}
+      <div style={{ padding: '16px', maxWidth: '600px', margin: '0 auto' }}>
+        <div style={{ display: 'flex', gap: '10px', background: 'rgba(255,255,255,0.05)', padding: '4px', borderRadius: '12px' }}>
+          <button onClick={() => setSelectedSource('chowtaifook')} style={{ flex: 1, padding: '12px', border: 'none', borderRadius: '10px', cursor: 'pointer', background: selectedSource === 'chowtaifook' ? 'rgba(255,215,0,0.2)' : 'transparent', color: selectedSource === 'chowtaifook' ? '#ffd700' : '#888', fontWeight: '600' }}>
+            🏪 周大福
+          </button>
+          <button onClick={() => setSelectedSource('chowsangsang')} style={{ flex: 1, padding: '12px', border: 'none', borderRadius: '10px', cursor: 'pointer', background: selectedSource === 'chowsangsang' ? 'rgba(255,215,0,0.2)' : 'transparent', color: selectedSource === 'chowsangsang' ? '#ffd700' : '#888', fontWeight: '600' }}>
+            🏪 周生生
+          </button>
+        </div>
+      </div>
+
+      {/* Price Cards */}
+      <div style={{ padding: '0 16px', maxWidth: '600px', margin: '0 auto' }}>
+        {selectedSource === 'chowtaifook' ? (
+          <>
+            {/* 999.9 Gold */}
+            <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: '16px', padding: '20px', marginBottom: '16px', border: '1px solid rgba(255,215,0,0.2)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#ffd700' }}>💎 999.9 黃金</span>
+                <button onClick={fetchPrices} disabled={loading} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px' }}>{loading ? '🔄' : '🔄'}</button>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div style={{ background: 'rgba(0,214,143,0.1)', padding: '16px', borderRadius: '12px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '12px', color: '#888', marginBottom: '4px' }}>售價 Sell</div>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#00d68f' }}>HK$ {currentPrices.gold999.sell.toLocaleString()}</div>
+                  <div style={{ fontSize: '12px', color: '#888' }}>毎克 HK$ {currentPrices.gold999.sellGram}</div>
+                </div>
+                <div style={{ background: 'rgba(255,92,92,0.1)', padding: '16px', borderRadius: '12px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '12px', color: '#888', marginBottom: '4px' }}>回收價 Buy</div>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#ff5c5c' }}>HK$ {currentPrices.gold999.buy.toLocaleString()}</div>
+                  <div style={{ fontSize: '12px', color: '#888' }}>毎克 HK$ {currentPrices.gold999.buyGram}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Gold Pellet */}
+            <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: '16px', padding: '20px', marginBottom: '16px', border: '1px solid rgba(255,215,0,0.15)' }}>
+              <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#ffd700', marginBottom: '16px' }}>🪙 黃金粒 (投資黃金)</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div style={{ background: 'rgba(0,214,143,0.1)', padding: '16px', borderRadius: '12px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '12px', color: '#888', marginBottom: '4px' }}>售價 Sell</div>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#00d68f' }}>HK$ {currentPrices.goldPellet.sell.toLocaleString()}</div>
+                  <div style={{ fontSize: '12px', color: '#888' }}>毎克 HK$ {currentPrices.goldPellet.sellGram}</div>
+                </div>
+                <div style={{ background: 'rgba(255,92,92,0.1)', padding: '16px', borderRadius: '12px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '12px', color: '#888', marginBottom: '4px' }}>回收價 Buy</div>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#ff5c5c' }}>HK$ {currentPrices.goldPellet.buy.toLocaleString()}</div>
+                  <div style={{ fontSize: '12px', color: '#888' }}>毎克 HK$ {currentPrices.goldPellet.buyGram}</div>
+                </div>
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Gold Ornaments */}
+            <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: '16px', padding: '20px', marginBottom: '16px', border: '1px solid rgba(255,215,0,0.2)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#ffd700' }}>💍 黃金飾品</span>
+                <button onClick={fetchPrices} disabled={loading} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px' }}>{loading ? '🔄' : '🔄'}</button>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                <div style={{ background: 'rgba(0,214,143,0.1)', padding: '12px', borderRadius: '10px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '11px', color: '#888' }}>售價</div>
+                  <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#00d68f' }}>${currentPrices.goldOrnaments.sell.toLocaleString()}</div>
+                </div>
+                <div style={{ background: 'rgba(92,159,255,0.1)', padding: '12px', borderRadius: '10px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '11px', color: '#888' }}>兌換</div>
+                  <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#5c9fff' }}>${currentPrices.goldOrnaments.exchange.toLocaleString()}</div>
+                </div>
+                <div style={{ background: 'rgba(255,92,92,0.1)', padding: '12px', borderRadius: '10px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '11px', color: '#888' }}>回收</div>
+                  <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#ff5c5c' }}>${currentPrices.goldOrnaments.buy.toLocaleString()}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Gold Bars */}
+            <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: '16px', padding: '20px', marginBottom: '16px', border: '1px solid rgba(255,215,0,0.15)' }}>
+              <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#ffd700', marginBottom: '16px' }}>📐 金條 / 金粒</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div style={{ background: 'rgba(0,214,143,0.1)', padding: '16px', borderRadius: '12px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '12px', color: '#888', marginBottom: '4px' }}>金條售價</div>
+                  <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#00d68f' }}>HK$ {currentPrices.goldIngot.sell.toLocaleString()}</div>
+                </div>
+                <div style={{ background: 'rgba(255,92,92,0.1)', padding: '16px', borderRadius: '12px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '12px', color: '#888', marginBottom: '4px' }}>金粒售價</div>
+                  <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#ff5c5c' }}>HK$ {currentPrices.goldBars.sell.toLocaleString()}</div>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Price Graph - Simple CSS Line */}
+      <div style={{ padding: '16px', maxWidth: '600px', margin: '0 auto' }}>
+        <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: '16px', padding: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#ffd700' }}>📈 一週金價趨勢</span>
+            <span style={{ fontSize: '12px', color: '#888' }}>999.9 Gold</span>
+          </div>
+          
+          {/* Simple bar chart */}
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '120px', gap: '8px' }}>
+            {PRICE_HISTORY.labels.map((label, i) => {
+              const value = historyData.gold999[i];
+              const max = Math.max(...historyData.gold999);
+              const min = Math.min(...historyData.gold999);
+              const height = ((value - min) / (max - min)) * 80 + 20;
+              
+              return (
+                <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: '100%', background: 'rgba(255,215,0,0.2)', borderRadius: '6px', height: '80px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+                    <div style={{ width: '70%', background: 'linear-gradient(180deg, #ffd700, #daa520)', borderRadius: '6px', height: `${height}px` }}></div>
+                  </div>
+                  <span style={{ fontSize: '10px', color: '#888' }}>${(value/1000).toFixed(1)}k</span>
+                  <span style={{ fontSize: '10px', color: '#666' }}>{label}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* Features */}
-      <section className="features-section">
-        <div className="container">
-          <h2 className="section-title">核心功能</h2>
-          <p className="section-subtitle">全方位管理您的黃金白銀投資</p>
-          
-          <div className="features-grid">
-            <div className="feature-card">
-              <div className="feature-icon">📊</div>
-              <h3 className="feature-title">實時金價</h3>
-              <p className="feature-desc">連接周大福、周生生官網，即時獲取最新金價</p>
-            </div>
-            
-            <div className="feature-card">
-              <div className="feature-icon">📒</div>
-              <h3 className="feature-title">攢金記賬</h3>
-              <p className="feature-desc">記錄買入賣出，自動計算資產價值與損益</p>
-            </div>
-            
-            <div className="feature-card">
-              <div className="feature-icon">🧮</div>
-              <h3 className="feature-title">黃金計算機</h3>
-              <p className="feature-desc">輸入重量即時計算價值，支援両與克換算</p>
-            </div>
-            
-            <div className="feature-card">
-              <div className="feature-icon">📱</div>
-              <h3 className="feature-title">手機專用</h3>
-              <p className="feature-desc">響應式設計，完美支援手機平板電腦</p>
-            </div>
-            
-            <div className="feature-card">
-              <div className="feature-icon">🔐</div>
-              <h3 className="feature-title">數據安全</h3>
-              <p className="feature-desc">雲端儲存，您的數據永不丟失</p>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* CTA */}
+      <div style={{ padding: '16px', maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
+        <Link href="/records" style={{ display: 'block', padding: '16px', background: 'linear-gradient(135deg, #ffd700, #daa520)', color: '#0a0a1a', borderRadius: '12px', textDecoration: 'none', fontWeight: 'bold', fontSize: '16px' }}>
+          開始記錄我的黃金資產 →
+        </Link>
+      </div>
 
-      {/* Price Section */}
-      <section id="prices" className="price-section">
-        <div className="container">
-          <div className="price-header">
-            <h2 className="section-title" style={{ textAlign: 'left', marginBottom: 0 }}>今日金價</h2>
-            <button 
-              onClick={fetchPrices} 
-              className="btn btn-secondary btn-sm"
-              disabled={loading}
-            >
-              {loading ? '🔄 載入中...' : '🔄 刷新'}
-            </button>
-          </div>
-          
-          <div className="price-source-tabs">
-            <button 
-              className={`price-tab ${selectedSource === 'chowtaifook' ? 'active' : ''}`}
-              onClick={() => setSelectedSource('chowtaifook')}
-            >
-              🏪 周大福
-            </button>
-            <button 
-              className={`price-tab ${selectedSource === 'chowsangsang' ? 'active' : ''}`}
-              onClick={() => setSelectedSource('chowsangsang')}
-            >
-              🏪 周生生
-            </button>
-          </div>
-          
-          <div className="price-grid">
-            {selectedSource === 'chowtaifook' ? (
-              <>
-                <div className="price-card">
-                  <h3 className="price-card-title">💰 999.9 黃金</h3>
-                  <div className="price-row">
-                    <span className="price-label">售價（毎両）</span>
-                    <span className="price-value sell">HK$ {prices.chowtaifook.gold999.sell.toLocaleString()}</span>
-                  </div>
-                  <div className="price-row">
-                    <span className="price-label">回收價（毎両）</span>
-                    <span className="price-value buy">HK$ {prices.chowtaifook.gold999.buy.toLocaleString()}</span>
-                  </div>
-                  <div className="price-row">
-                    <span className="price-label">售價（毎克）</span>
-                    <span className="price-value sell">HK$ {prices.chowtaifook.gold999.sellGram.toFixed(2)}</span>
-                  </div>
-                </div>
-                
-                <div className="price-card">
-                  <h3 className="price-card-title">🪙 黃金粒</h3>
-                  <div className="price-row">
-                    <span className="price-label">售價（毎両）</span>
-                    <span className="price-value sell">HK$ {prices.chowtaifook.goldPellet.sell.toLocaleString()}</span>
-                  </div>
-                  <div className="price-row">
-                    <span className="price-label">回收價（毎両）</span>
-                    <span className="price-value buy">HK$ {prices.chowtaifook.goldPellet.buy.toLocaleString()}</span>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="price-card">
-                  <h3 className="price-card-title">💍 黃金飾品</h3>
-                  <div className="price-row">
-                    <span className="price-label">售價（毎両）</span>
-                    <span className="price-value sell">HK$ {prices.chowsangsang.goldOrnaments.sell.toLocaleString()}</span>
-                  </div>
-                  <div className="price-row">
-                    <span className="price-label">兌換價（毎両）</span>
-                    <span className="price-value exchange">HK$ {prices.chowsangsang.goldOrnaments.exchange.toLocaleString()}</span>
-                  </div>
-                  <div className="price-row">
-                    <span className="price-label">回收價（毎両）</span>
-                    <span className="price-value buy">HK$ {prices.chowsangsang.goldOrnaments.buy.toLocaleString()}</span>
-                  </div>
-                </div>
-                
-                <div className="price-card">
-                  <h3 className="price-card-title">📐 金條</h3>
-                  <div className="price-row">
-                    <span className="price-label">售價（毎両）</span>
-                    <span className="price-value sell">HK$ {prices.chowsangsang.goldIngot.sell.toLocaleString()}</span>
-                  </div>
-                  <div className="price-row">
-                    <span className="price-label">回收價（毎両）</span>
-                    <span className="price-value buy">HK$ {prices.chowsangsang.goldIngot.buy.toLocaleString()}</span>
-                  </div>
-                </div>
-                
-                <div className="price-card">
-                  <h3 className="price-card-title">🪙 金粒</h3>
-                  <div className="price-row">
-                    <span className="price-label">售價（毎両）</span>
-                    <span className="price-value sell">HK$ {prices.chowsangsang.goldBars.sell.toLocaleString()}</span>
-                  </div>
-                  <div className="price-row">
-                    <span className="price-label">回收價（毎両）</span>
-                    <span className="price-value buy">HK$ {prices.chowsangsang.goldBars.buy.toLocaleString()}</span>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-          
-          <div className="last-update">
-            {lastUpdate ? `最後更新：${new Date(lastUpdate).toLocaleString('zh-HK')}` : '點擊刷新按鈕更新價格'}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="cta-section">
-        <div className="container">
-          <h2 className="section-title">開始記錄您的貴金屬資產</h2>
-          <p className="section-subtitle">免費註冊，輕鬆管理您的黃金白銀投資</p>
-          <Link href="/dashboard" className="btn btn-primary" style={{ fontSize: '16px', padding: '14px 32px' }}>
-            立即開始 →
+      {/* Bottom Navigation */}
+      <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'rgba(10,10,26,0.98)', borderTop: '1px solid rgba(255,215,0,0.2)', padding: '8px 16px', paddingBottom: 'max(8px, env(safe-area-inset-bottom))', display: 'flex', justifyContent: 'space-around', zIndex: 100 }}>
+        {NAV_ITEMS.map((item) => (
+          <Link key={item.href} href={item.href} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', textDecoration: 'none', color: pathname === item.href ? '#ffd700' : '#666', fontSize: '10px' }}>
+            <span style={{ fontSize: '20px' }}>{item.icon}</span>
+            <span>{item.label}</span>
           </Link>
-        </div>
-      </section>
-
-      {/* Mobile Navigation */}
-      <nav className="mobile-nav">
-        <Link href="/" className="mobile-nav-item active">
-          <span>🏠</span>
-          <span>首頁</span>
-        </Link>
-        <Link href="/dashboard" className="mobile-nav-item">
-          <span>💰</span>
-          <span>資產</span>
-        </Link>
+        ))}
       </nav>
-    </main>
+    </div>
   );
 }
