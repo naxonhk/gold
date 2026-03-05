@@ -1,15 +1,13 @@
 {
-  "name": "gold-price-scraper",
+  "name": "gold-scraper",
   "version": "1.0.0",
-  "description": "Scrapes gold prices every 6 hours",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "deploy": "railway up"
+    "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.18.2",
-    "node-fetch": "^3.3.2",
+    "node-fetch": "^2.7.0",
     "firebase-admin": "^12.0.0"
   }
 }
